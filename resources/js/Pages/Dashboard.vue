@@ -1,108 +1,111 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 
-// Mengambil data user dari props global (disediakan oleh middleware HandleInertiaRequests)
 const props = defineProps({
     auth: Object
 });
 
-const form = useForm({});
+const page = usePage();
 
-const logout = () => {
-    form.post(route('logout'));
+// Mengecek apakah user sudah memiliki token Google
+const hasGoogleToken = !!props.auth.user.google_token;
+
+// Form Upload Drive
+const driveForm = useForm({
+    file: null,
+});
+
+const submitDrive = () => {
+    driveForm.post(route('google.drive.upload'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            driveForm.reset();
+            alert(page.props.flash.success || 'Upload Berhasil!');
+        },
+    });
+};
+
+// Form Calendar Event
+const calendarForm = useForm({
+    summary: '',
+    start_datetime: '',
+    end_datetime: '',
+});
+
+const submitCalendar = () => {
+    calendarForm.post(route('google.calendar.create'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            calendarForm.reset();
+            alert(page.props.flash.success || 'Jadwal Berhasil Dibuat!');
+        },
+    });
 };
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Dashboard Integrasi" />
 
-    <div class="min-h-screen bg-gray-50 flex flex-col">
-        <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <div class="text-2xl font-black text-gray-900 tracking-tighter">
-                            A<span class="text-indigo-600">+</span>W<span class="text-indigo-600">+</span>P
+    <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto space-y-8">
+            
+            <div class="bg-white p-6 rounded-lg shadow text-center">
+                <h2 class="text-2xl font-bold mb-4">Integrasi Google Workspace</h2>
+                <div v-if="!hasGoogleToken">
+                    <p class="mb-4 text-gray-600">Anda belum menghubungkan akun Google.</p>
+                    <a :href="route('google.redirect')" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">
+                        Hubungkan Google Account
+                    </a>
+                </div>
+                <div v-else>
+                    <span class="text-green-600 font-bold bg-green-100 px-4 py-2 rounded">
+                        ✓ Akun Google Terhubung
+                    </span>
+                </div>
+            </div>
+
+            <div v-if="hasGoogleToken" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold border-b pb-2 mb-4">Upload ke Google Drive</h3>
+                    <form @submit.prevent="submitDrive">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1">Pilih File</label>
+                            <input 
+                                type="file" 
+                                @input="driveForm.file = $event.target.files[0]"
+                                class="w-full border p-2 rounded" 
+                                required
+                            >
                         </div>
-                    </div>
-
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm font-medium text-gray-700 hidden sm:block">
-                            Hi, {{ $page.props.auth.user.nama_lengkap }}
-                        </span>
-                        <button 
-                            @click="logout"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out"
-                        >
-                            Logout
+                        <button type="submit" :disabled="driveForm.processing" class="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700">
+                            {{ driveForm.processing ? 'Mengunggah...' : 'Upload File' }}
                         </button>
-                    </div>
+                    </form>
                 </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold border-b pb-2 mb-4">Buat Jadwal Calendar</h3>
+                    <form @submit.prevent="submitCalendar">
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium mb-1">Nama Kegiatan</label>
+                            <input type="text" v-model="calendarForm.summary" class="w-full border p-2 rounded" required placeholder="Contoh: Meeting Proyek A">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium mb-1">Waktu Mulai</label>
+                            <input type="datetime-local" v-model="calendarForm.start_datetime" class="w-full border p-2 rounded" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1">Waktu Selesai</label>
+                            <input type="datetime-local" v-model="calendarForm.end_datetime" class="w-full border p-2 rounded" required>
+                        </div>
+                        <button type="submit" :disabled="calendarForm.processing" class="w-full bg-red-600 text-white py-2 rounded font-bold hover:bg-red-700">
+                            {{ calendarForm.processing ? 'Menyimpan...' : 'Simpan Jadwal' }}
+                        </button>
+                    </form>
+                </div>
+
             </div>
-        </nav>
-
-        <main class="flex-grow py-12 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h2 class="text-3xl font-bold text-gray-900">
-                                Selamat Datang Kembali!
-                            </h2>
-                            <p class="mt-2 text-lg text-gray-600">
-                                Senang melihat Anda kembali, <span class="font-semibold text-indigo-600">{{ $page.props.auth.user.nama_lengkap }}</span>.
-                            </p>
-                        </div>
-                        <div class="mt-6 md:mt-0">
-                            <div class="inline-flex items-center px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-full text-indigo-700 text-sm font-medium">
-                                <span class="flex h-2 w-2 rounded-full bg-indigo-500 mr-2 animate-pulse"></span>
-                                Akun Terverifikasi
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-100 p-6 hover:shadow-md transition duration-300">
-                        <div class="text-sm font-medium text-gray-500 truncate">Total Login</div>
-                        <div class="mt-1 text-3xl font-bold text-gray-900">12</div>
-                        <div class="mt-4 flex items-center text-sm text-green-600">
-                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd" />
-                            </svg>
-                            <span>Meningkat 5%</span>
-                        </div>
-                    </div>
-
-                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-100 p-6 hover:shadow-md transition duration-300">
-                        <div class="text-sm font-medium text-gray-500 truncate">Email Akun</div>
-                        <div class="mt-1 text-xl font-bold text-gray-900 truncate">
-                            {{ $page.props.auth.user.email }}
-                        </div>
-                        <div class="mt-4 text-sm text-gray-400">
-                            Status: <span class="text-indigo-600 font-medium">Aktif</span>
-                        </div>
-                    </div>
-
-                    <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-100 p-6 hover:shadow-md transition duration-300">
-                        <div class="text-sm font-medium text-gray-500 truncate">Sistem Saat Ini</div>
-                        <div class="mt-1 text-3xl font-bold text-gray-900">Project Test</div>
-                        <div class="mt-4 text-sm text-gray-400 font-medium italic">
-                            A+W+P v1.0
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-8 border-2 border-dashed border-gray-200 rounded-2xl h-64 flex items-center justify-center">
-                    <p class="text-gray-400 font-medium tracking-wide">Data tabel atau grafik akan muncul di sini</p>
-                </div>
-            </div>
-        </main>
-
-        <footer class="bg-white border-t border-gray-200 py-6 text-center">
-            <p class="text-sm text-gray-500">
-                &copy; {{ new Date().getFullYear() }} ABID WEB PROJECT'S. All rights reserved.
-            </p>
-        </footer>
+        </div>
     </div>
 </template>
