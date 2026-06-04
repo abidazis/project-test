@@ -53,12 +53,10 @@ class GoogleIntegrationController extends Controller
     public function uploadToDrive(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:5120' // Maks 5MB
+            'file' => 'required|file|max:5120'
         ]);
 
         $client = $this->googleService->getClient();
-        
-        // Jika token tidak valid, arahkan untuk login Google lagi
         if (!$client->getAccessToken()) {
             return redirect()->route('google.redirect');
         }
@@ -66,25 +64,28 @@ class GoogleIntegrationController extends Controller
         $driveService = new Drive($client);
         $file = $request->file('file');
 
-        // Setup metadata file Drive
         $fileMetadata = new Drive\DriveFile([
             'name' => $file->getClientOriginalName()
         ]);
 
-        // Proses eksekusi upload ke Google Drive
         $content = file_get_contents($file->getRealPath());
-        $driveService->files->create($fileMetadata, [
+        
+        // Minta Google mengembalikan 'webViewLink' juga
+        $createdFile = $driveService->files->create($fileMetadata, [
             'data' => $content,
             'mimeType' => $file->getMimeType(),
             'uploadType' => 'multipart',
-            'fields' => 'id'
+            'fields' => 'id, webViewLink' 
         ]);
 
-        return back()->with('success', 'File berhasil diunggah ke Google Drive!');
+        // Kirim pesan sukses beserta link aslinya
+        return back()
+            ->with('success', 'File berhasil diunggah ke Google Drive!')
+            ->with('action_url', $createdFile->webViewLink);
     }
 
     /**
-     * Fungsi Tambah Jadwal ke Google Calendar.
+     * Fungsi Membuat Event di Google Calendar.
      */
     public function createCalendarEvent(Request $request)
     {
@@ -95,29 +96,31 @@ class GoogleIntegrationController extends Controller
         ]);
 
         $client = $this->googleService->getClient();
-        
         if (!$client->getAccessToken()) {
             return redirect()->route('google.redirect');
         }
 
         $calendarService = new Calendar($client);
 
-        // Bentuk format data event sesuai standar Google Calendar API
         $event = new Event([
             'summary' => $request->summary,
             'start' => [
-                'dateTime' => \Carbon\Carbon::parse($request->start_datetime)->toIso8601String(),
+                // PERBAIKAN ZONA WAKTU: Kunci di 'Asia/Jakarta'
+                'dateTime' => \Carbon\Carbon::parse($request->start_datetime, 'Asia/Jakarta')->toIso8601String(),
                 'timeZone' => 'Asia/Jakarta',
             ],
             'end' => [
-                'dateTime' => \Carbon\Carbon::parse($request->end_datetime)->toIso8601String(),
+                // PERBAIKAN ZONA WAKTU: Kunci di 'Asia/Jakarta'
+                'dateTime' => \Carbon\Carbon::parse($request->end_datetime, 'Asia/Jakarta')->toIso8601String(),
                 'timeZone' => 'Asia/Jakarta',
             ],
         ]);
 
-        // Insert event ke kalender utama user
-        $calendarService->events->insert('primary', $event);
+        $createdEvent = $calendarService->events->insert('primary', $event);
 
-        return back()->with('success', 'Jadwal berhasil ditambahkan ke Google Calendar!');
+        // Kirim pesan sukses beserta link aslinya
+        return back()
+            ->with('success', 'Jadwal berhasil ditambahkan ke Google Calendar!')
+            ->with('action_url', $createdEvent->htmlLink);
     }
 }
