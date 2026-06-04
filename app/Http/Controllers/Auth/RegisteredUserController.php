@@ -45,9 +45,7 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        Auth::login($user);
-
-        // Ganti RouteServiceProvider::HOME dengan pemanggilan nama route langsung
-        return redirect(route('dashboard', absolute: false));
+        // Redirect ke halaman login dengan pesan sukses
+        return redirect()->route('login')->with('status', 'Registrasi berhasil! Silakan Sign In dengan akun baru Anda.');
     }
 }

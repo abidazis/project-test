@@ -1,94 +1,58 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 
-defineProps({
-    canResetPassword: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
-});
+defineProps({ canResetPassword: Boolean, status: String });
 
-const form = useForm({
-    email: '',
-    password: '',
-    remember: false,
-});
+const form = useForm({ email: '', password: '', remember: false });
 
-const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => form.reset('password'),
-    });
-};
+const submit = () => { form.post(route('login'), { onFinish: () => form.reset('password') }); };
 </script>
 
 <template>
     <Head title="Log in" />
-
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-        <!-- Logo Branding A+W+P -->
-        <div class="mb-8 text-center">
-            <h1 class="text-4xl font-extrabold text-gray-900 tracking-widest">
-                A<span class="text-indigo-600">+</span>W<span class="text-indigo-600">+</span>P
-            </h1>
-            <p class="text-sm text-gray-500 mt-2 font-medium tracking-widest">ABID WEB PROJECT'S</p>
-        </div>
-
-        <div class="w-full sm:max-w-md mt-6 px-6 py-8 bg-white shadow-md overflow-hidden sm:rounded-lg">
-            <div v-if="status" class="mb-4 font-medium text-sm text-green-600">
-                {{ status }}
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-indigo-50 p-6">
+        <div class="w-full max-w-md bg-white/80 backdrop-blur-xl shadow-2xl rounded-[2rem] p-10 border border-white">
+            
+            <div class="text-center mb-10">
+                <h1 class="text-4xl font-black text-slate-900 tracking-tight">
+                    A<span class="text-indigo-600">W</span>P
+                </h1>
+                <p class="text-sm text-slate-500 mt-2 font-semibold tracking-widest uppercase">Abid Web Project's</p>
             </div>
 
-            <form @submit.prevent="submit">
+            <div v-if="status" class="mb-4 font-medium text-sm text-green-600 text-center bg-green-50 p-3 rounded-xl">{{ status }}</div>
+
+            <form @submit.prevent="submit" class="space-y-6">
                 <div>
-                    <InputLabel for="email" value="Email" />
-                    <TextInput
-                        id="email"
-                        type="email"
-                        class="mt-1 block w-full"
-                        v-model="form.email"
-                        required
-                        autofocus
-                        autocomplete="username"
-                    />
-                    <InputError class="mt-2" :message="form.errors.email" />
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                    <input type="email" v-model="form.email" required autofocus
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="nama@email.com" />
+                    <p v-if="form.errors.email" class="text-red-500 text-xs mt-2 font-medium">{{ form.errors.email }}</p>
                 </div>
 
-                <div class="mt-4">
-                    <InputLabel for="password" value="Password" />
-                    <TextInput
-                        id="password"
-                        type="password"
-                        class="mt-1 block w-full"
-                        v-model="form.password"
-                        required
-                        autocomplete="current-password"
-                    />
-                    <InputError class="mt-2" :message="form.errors.password" />
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+                    <input type="password" v-model="form.password" required
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="••••••••" />
+                    <p v-if="form.errors.password" class="text-red-500 text-xs mt-2 font-medium">{{ form.errors.password }}</p>
                 </div>
 
-                <div class="flex items-center justify-between mt-6">
-                    <Link
-                        v-if="canResetPassword"
-                        :href="route('password.request')"
-                        class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
+                <div class="flex items-center justify-between pt-2">
+                    <Link v-if="canResetPassword" :href="route('password.request')" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
                         Lupa password?
                     </Link>
+                </div>
 
-                    <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                        Log in
-                    </PrimaryButton>
-                </div>
-                
-                <div class="mt-6 text-center text-sm text-gray-600">
-                    Belum punya akun? <Link :href="route('register')" class="text-indigo-600 font-semibold hover:underline">Daftar sekarang</Link>
-                </div>
+                <button type="submit" :disabled="form.processing"
+                    class="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all active:scale-[0.98]">
+                    {{ form.processing ? 'Memproses...' : 'Sign In' }}
+                </button>
+
+                <p class="text-center text-sm text-slate-600 mt-6">
+                    Belum punya akun? <Link :href="route('register')" class="font-bold text-indigo-600 hover:text-indigo-500">Daftar sekarang</Link>
+                </p>
             </form>
         </div>
     </div>
